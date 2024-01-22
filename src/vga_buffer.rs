@@ -85,6 +85,7 @@ impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
+            0x08 => self.backspace(),
             byte => {
                 if self.column_position >= BUFFER_WIDTH {
                     self.new_line();
@@ -112,7 +113,7 @@ impl Writer {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte(byte),
+                0x20..=0x7e | b'\n' | 0x08 => self.write_byte(byte),
                 // not part of printable ASCII range
                 _ => self.write_byte(0xfe),
             }
@@ -139,6 +140,27 @@ impl Writer {
         };
         for col in 0..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
+        }
+    }
+
+    fn backspace(&mut self) {
+        let blank = ScreenChar {
+            ascii_character: b' ',
+            color_code: self.color_code,
+        };
+        if self.column_position == 0 {
+            self.column_position = BUFFER_WIDTH - 1;
+            for rr in 0..BUFFER_HEIGHT - 1 {
+                let row = BUFFER_HEIGHT - 1 - rr;
+                for col in 0..BUFFER_WIDTH {
+                    let character = self.buffer.chars[row - 1][col].read();
+                    self.buffer.chars[row][col].write(character);
+                }
+            }
+            self.clear_row(0);
+        } else {
+            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position - 1].write(blank);
+            self.column_position -= 1;
         }
     }
 }
