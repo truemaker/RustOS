@@ -33,7 +33,7 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
 
 /// Translates the given virtual address to the mapped physical address, or
 /// `None` if the address is not mapped.
-///
+/// # Safety
 /// This function is unsafe because the caller must guarantee that the
 /// complete physical memory is mapped to virtual memory at the passed
 /// `physical_memory_offset`.

@@ -41,7 +41,7 @@ impl Executor {
             };
             let waker = waker_cache
                 .entry(task_id)
-                .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()));
+                .or_insert_with(|| TaskWaker::new(task_id, task_queue.clone()).waker());
             let mut context = Context::from_waker(waker);
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
@@ -95,11 +95,14 @@ impl Wake for TaskWaker {
 }
 
 impl TaskWaker {
-    fn new(task_id: TaskId, task_queue: Arc<ArrayQueue<TaskId>>) -> Waker {
-        Waker::from(Arc::new(TaskWaker {
+    fn new(task_id: TaskId, task_queue: Arc<ArrayQueue<TaskId>>) -> TaskWaker {
+        TaskWaker {
             task_id,
             task_queue,
-        }))
+        }
+    }
+    fn waker(self) -> Waker {
+        Waker::from(Arc::from(self))
     }
 }
 
