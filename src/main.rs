@@ -7,7 +7,7 @@ use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use rustos::memory::BootInfoFrameAllocator;
 use rustos::task::executor::Executor;
-use rustos::task::{keyboard, timer, Task};
+use rustos::task::{keyboard,Task};
 use rustos::{allocator, gdt, interrupts, memory, println};
 use x86_64::{self, VirtAddr};
 
@@ -43,7 +43,6 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let mut executor = Executor::new();
     println!("Setup Cooperative multi-tasking...");
     executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.spawn(Task::new(timer::timer_handle()));
     println!("Added tasks. Running...");
     executor.run();
 }
