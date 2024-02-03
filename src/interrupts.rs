@@ -1,4 +1,5 @@
 use crate::gdt;
+use crate::inputs::mouse::mouse_interrupt_handler;
 use crate::println;
 use lazy_static::lazy_static;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
@@ -15,6 +16,8 @@ lazy_static! {
             .set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()]
             .set_handler_fn(kb_handler);
+        idt[InterruptIndex::Mouse.as_usize()]
+            .set_handler_fn(mouse_interrupt_handler);
         idt
     };
 }
@@ -23,8 +26,8 @@ pub fn init_idt() {
     IDT.load();
     unsafe {
         let mut masks = PICS.lock().read_masks();
-        masks[0] = 0xff ^ (PICMasks::Timer.as_u8() | PICMasks::Keyboard.as_u8());
-        masks[1] = 0xff;
+        masks[0] = 0xff ^ (PICMasks::Timer.as_u8() | PICMasks::Keyboard.as_u8() | PICMasks::Cascade.as_u8());
+        masks[1] = 0xff ^ (PICMasksB::Mouse.as_u8());
         PICS.lock().write_masks(masks[0], masks[1]);
     }
 }
@@ -54,7 +57,7 @@ extern "x86-interrupt" fn kb_handler(_stack_frame: InterruptStackFrame) {
 
     let mut port = Port::new(0x60);
     let scancode: u8 = unsafe { port.read() };
-    crate::task::keyboard::add_scancode(scancode); // new
+    crate::inputs::keyboard::add_scancode(scancode); // new
 
     unsafe {
         PICS.lock()
@@ -78,9 +81,31 @@ pub static PICS: spin::Mutex<ChainedPics> =
 pub enum PICMasks {
     Timer = 1,
     Keyboard = 2,
+    Cascade = 4,
+    COM2 = 8,
+    COM1 = 16,
+    LPT2 = 32,
+    Floppy = 64,
+    LPT1 = 128,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum PICMasksB {
+    CMOS = 1,
+    LegacySCSI = 2,
+    SCSI0 = 4,
+    SCSI1 = 8,
+    Mouse = 16,
 }
 
 impl PICMasks {
+    fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
+
+impl PICMasksB {
     fn as_u8(self) -> u8 {
         self as u8
     }
@@ -91,10 +116,11 @@ impl PICMasks {
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET,
     Keyboard,
+    Mouse = PIC_2_OFFSET + 4,
 }
 
 impl InterruptIndex {
-    fn as_u8(self) -> u8 {
+    pub fn as_u8(self) -> u8 {
         self as u8
     }
 

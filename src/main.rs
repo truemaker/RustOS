@@ -4,10 +4,11 @@
 extern crate alloc;
 
 use bootloader::{entry_point, BootInfo};
+use rustos::inputs::{keyboard, mouse};
 use core::panic::PanicInfo;
 use rustos::memory::BootInfoFrameAllocator;
 use rustos::task::executor::Executor;
-use rustos::task::{keyboard,Task};
+use rustos::task::Task;
 use rustos::{allocator, gdt, interrupts, memory, println};
 use x86_64::{self, VirtAddr};
 
@@ -25,6 +26,7 @@ entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     gdt::init();
     interrupts::init_idt();
+    mouse::init_mouse();
     unsafe { interrupts::PICS.lock().initialize() };
     x86_64::instructions::interrupts::enable();
 
