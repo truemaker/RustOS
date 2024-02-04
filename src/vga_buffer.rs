@@ -103,6 +103,13 @@ impl Writer {
             }
         }
     }
+    
+    pub fn set_char(&mut self, x: usize, y: usize, byte: u8) {
+        self.buffer.chars[y][x].write(ScreenChar {
+            ascii_character: byte,
+            color_code: self.color_code
+        });
+    }
 
     /// Writes the given ASCII string to the buffer.
     ///
