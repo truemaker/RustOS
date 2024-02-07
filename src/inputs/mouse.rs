@@ -39,7 +39,6 @@ pub struct MouseHandle {
     y: i16,
     mouse_left: bool,
     mouse_right: bool,
-    mouse_middle: bool,
     insensitivity: i16,
 }
 
@@ -49,7 +48,6 @@ impl MouseHandle {
             x: 0,
             y: 0,
             mouse_left: false,
-            mouse_middle: false,
             mouse_right: false,
             insensitivity,
         }
